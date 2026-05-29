@@ -16,8 +16,8 @@ export function Layout({ children }) {
   const active = NAV.find(n => pathname.startsWith(n.path))?.path
 
   return (
-    <div className="flex flex-col h-full bg-cream-100 relative" style={{ fontFamily: "'Hanken Grotesk', system-ui, sans-serif" }}>
-      <main className="flex-1 overflow-auto overscroll-none relative">
+    <div className="flex flex-col w-full h-full bg-cream-100 relative overflow-x-hidden" style={{ fontFamily: "'Hanken Grotesk', system-ui, sans-serif" }}>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none relative">
         {children}
       </main>
       <nav className="shrink-0 relative z-40 bg-white/90 backdrop-blur-lg border-t border-line">

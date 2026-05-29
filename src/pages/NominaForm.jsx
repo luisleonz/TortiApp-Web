@@ -194,21 +194,21 @@ export default function NominaForm() {
                       <span className="text-sm font-extrabold text-amber-600 tabular-nums">{money0(subtotal)}</span>
                     </div>
                     <div className="flex flex-col gap-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-[88px] shrink-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-20 shrink-0">
                           <div className="text-xs font-bold text-ink-2">Del día</div>
                           <div className="text-[11px] text-ink-3 tabular-nums">{money(tarifa.delDia || 0)}/pza</div>
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <NumField value={vDd} onChange={v => updProd(`${p.k}_dd`, v)} suffix="pzas" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-[88px] shrink-0">
-                          <div className="text-xs font-bold text-ink-2">Día anterior</div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-20 shrink-0">
+                          <div className="text-xs font-bold text-ink-2">Día ant.</div>
                           <div className="text-[11px] text-ink-3 tabular-nums">{money(tarifa.diaAnterior || 0)}/pza</div>
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <NumField value={vDa} onChange={v => updProd(`${p.k}_da`, v)} suffix="pzas" />
                         </div>
                       </div>
