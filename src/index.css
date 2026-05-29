@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #E7DECC;
+    overflow: hidden;
+  }
+
+  #root {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+  }
+}
+
+@layer utilities {
+  .bg-surface { background-color: #FFFFFF; }
+  .bg-surface-2 { background-color: #F5EFE3; }
+  .bg-stage { background-color: #E7DECC; }
+  .bg-cream-100 { background-color: #F7F2E7; }
+  .border-line { border-color: #EBE3D2; }
+  .text-ink { color: #2B2218; }
+  .text-ink-2 { color: #6E614C; }
+  .text-ink-3 { color: #9C8E78; }
+  .text-surface { color: #FFFFFF; }
+  .bg-ink { background-color: #2B2218; }
+
+  .rounded-card { border-radius: 16px; }
+  .rounded-field { border-radius: 12px; }
+  .rounded-btn { border-radius: 12px; }
+  .h-touch { height: 44px; }
+  .h-touch-lg { height: 52px; }
+  .w-touch { width: 44px; }
+  .w-touch-lg { width: 52px; }
+  .min-h-touch { min-height: 44px; }
+}
+
+/* Animación toast */
+@keyframes taFade {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TortiApp — Nómina semanal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Albert+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --stage: #E7DECC;
+    --bg: #F7F2E7;
+    --surface: #FFFFFF;
+    --surface-2: #F5EFE3;
+    --ink: #2B2218;
+    --ink-2: #6E614C;
+    --ink-3: #9C8E78;
+    --line: #EBE3D2;
+    --header-bg: rgba(247, 242, 231, 0.82);
+    --header-line: rgba(120, 90, 40, 0.10);
+    --nav-bg: rgba(252, 249, 242, 0.9);
+
+    --amber: #C8861F; --amber-soft: #F7E8C9; --amber-ink: #8A5A0C; --amber-line: #EAD3A2;
+    --brown: #7A4A1E; --brown-soft: #ECE0D2; --brown-ink: #6B3F18;
+    --green: #3F8C5A; --green-soft: #DEEDE0; --green-ink: #2C6B43;
+    --red: #B4452F; --red-soft: #F6DED8;
+
+    /* themeable (App los sobrescribe) */
+    --primary: #B5740F; --primary-ink: #8A5A0C; --primary-soft: #F6E7C8; --on-primary: #FFFDF7;
+    --r-card: 16px; --r-field: 12px; --r-btn: 12px;
+    --font: 'Hanken Grotesk', system-ui, sans-serif;
+    --font-display: 'Hanken Grotesk', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--stage);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    overflow: hidden; overscroll-behavior: none;
+  }
+  #root { height: 100%; }
+  .ta-btn { border: none; font-family: var(--font); color: inherit; -webkit-appearance: none; appearance: none; }
+  .ta-btn:disabled { cursor: default; }
+  .ta-btn:active { transform: scale(0.97); }
+  .ta-scroll { -webkit-overflow-scrolling: touch; }
+  .ta-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  input { font-family: var(--font); }
+  input::placeholder { color: var(--ink-3); opacity: 0.7; }
+  .ta-field:focus-within { border-color: var(--primary) !important; box-shadow: 0 0 0 3px var(--primary-soft); }
+  .ta-fade { animation: taFade 0.3s ease; }
+  @keyframes taFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes taToast { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+</style>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="22" fill="#B5740F"/>
+    <g fill="none" stroke="#FFF8EA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50 78V40"/>
+      <path d="M50 40c0-8 6-14 14-14M50 40c0-8-6-14-14-14M50 56c0-6.5 5.5-12 12-12M50 56c0-6.5-5.5-12-12-12M50 70c0-6.5 5.5-12 12-12M50 70c0-6.5-5.5-12-12-12"/>
+    </g>
+  </svg>
+</template>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- datos (JS plano) -->
+<script src="app/store.js"></script>
+
+<!-- componentes (JSX) — bundle único para evitar colisión de helpers de Babel -->
+<script type="text/babel" src="app/bundle.jsx"></script>
+</body>
+</html>
