@@ -147,8 +147,8 @@ export default function NominaForm() {
         setDias(p[0]?.cantidad || 0)
         setSueldoDiario(String(p[0]?.precioUnitario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador))
       }
-      setBonos(existente.bonos || [])
-      setExtras(existente.extras || [])
+      setBonos(Array.isArray(existente.bonos) ? existente.bonos : [])
+      setExtras(Array.isArray(existente.extras) ? existente.extras : [])
       setAbonosPrestamo(String(existente.abonosPrestamo || ''))
       setAbonoCreditoTienda(String(existente.abonoCreditoTienda || ''))
     } else {
@@ -207,9 +207,13 @@ export default function NominaForm() {
       semana: week,
       tipo: emp.tipo,
       ...nominaData,
-      ...calc,
+      // Resumen calculado — nombres distintos a bonos/extras (arrays) para no pisar
       totalNeto: calc.neto,
       salarioBase: calc.base,
+      abono: calc.abono,
+      credito: calc.credito,
+      ingresos: calc.ingresos,
+      deducciones: calc.deducciones,
     }
     dispatch({ type: 'SAVE_NOMINA', payload: nomina })
     showToast('Nómina guardada')

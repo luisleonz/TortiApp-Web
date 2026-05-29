@@ -16,8 +16,10 @@ export const PANES = [
 export function calcNomina(n) {
   const tipo = n.tipo
   const prod = n.produccion || []
-  const bonos = (n.bonos || []).reduce((s, b) => s + (+b.monto || 0), 0)
-  const extras = (n.extras || []).reduce((s, b) => s + (+b.monto || 0), 0)
+  const bonosArr = Array.isArray(n.bonos) ? n.bonos : []
+  const extrasArr = Array.isArray(n.extras) ? n.extras : []
+  const bonos = bonosArr.reduce((s, b) => s + (+b.monto || 0), 0)
+  const extras = extrasArr.reduce((s, b) => s + (+b.monto || 0), 0)
   const abono = +n.abonosPrestamo || 0
   const credito = +n.abonoCreditoTienda || 0
 
