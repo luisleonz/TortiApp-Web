@@ -12,10 +12,11 @@ function seed() {
       { id: 'e6', nombre: 'Ana López', tipo: 'Mostrador', sueldoDiario: 260, fechaIngreso: '2023-02-10', nss: '', direccion: '', telefono: '729 660 8899', fotoUrl: null, activo: true },
     ],
     tarifas: {
-      panDulce:   { delDia: 1.5, diaAnterior: 1.0 },
-      panBlanco:  { delDia: 1.2, diaAnterior: 0.8 },
+      panDulce:    { delDia: 1.5, diaAnterior: 1.0 },
+      panGlaseado: { delDia: 2.0, diaAnterior: 1.5 },
+      panBlanco:   { delDia: 1.2, diaAnterior: 0.8 },
       panAjonjoli: { delDia: 1.8, diaAnterior: 1.2 },
-      galletas:   { delDia: 2.0, diaAnterior: 1.5 },
+      galletas:    { delDia: 2.0, diaAnterior: 1.5 },
       precioPorSaco: 180,
       sueldoDiarioMostrador: 280,
     },
@@ -30,7 +31,7 @@ function seed() {
   }
 }
 
-const BREAD_KEYS = ['panDulce', 'panBlanco', 'panAjonjoli', 'galletas']
+const BREAD_KEYS = ['panDulce', 'panGlaseado', 'panBlanco', 'panAjonjoli', 'galletas']
 
 // Converts old single-price tarifas to the two-tier format
 export function migrateState(state) {

@@ -207,7 +207,7 @@ export default function NominaForm() {
           </button>
         }
       />
-      <div className="p-4 pb-28 flex flex-col gap-5">
+      <div className="p-4 pb-44 flex flex-col gap-5">
         <div className="flex items-center gap-3">
           <Avatar emp={emp} size="lg" />
           <div>
@@ -429,7 +429,7 @@ export default function NominaForm() {
 
       {/* Barra fija inferior */}
       {calc && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-md border-t border-line px-4 py-3 flex items-center gap-3">
+        <div className="fixed bottom-16 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-line px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
             <div className="text-xs text-ink-3 font-semibold uppercase tracking-wide">Total neto</div>
             <div className="text-2xl font-extrabold text-ink tabular-nums">{money(calc.neto)}</div>
@@ -442,7 +442,7 @@ export default function NominaForm() {
       )}
 
       {toast && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-28 z-[300] bg-ink text-surface text-sm font-semibold px-5 py-3 rounded-full shadow-xl whitespace-nowrap">
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-36 z-[300] bg-ink text-surface text-sm font-semibold px-5 py-3 rounded-full shadow-xl whitespace-nowrap">
           {toast}
         </div>
       )}

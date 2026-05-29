@@ -2,6 +2,7 @@
 export const TIPOS = ['Panadero', 'Tortillero', 'Mostrador']
 export const PANES = [
   { k: 'panDulce',    label: 'Pan dulce' },
+  { k: 'panGlaseado', label: 'Pan glaseado' },
   { k: 'panBlanco',   label: 'Pan blanco' },
   { k: 'panAjonjoli', label: 'Ajonjolí' },
   { k: 'galletas',    label: 'Galletas' },
