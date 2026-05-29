@@ -84,10 +84,13 @@ export default function NominaForm() {
   }
 
   // Tortillero: 7-day array for sacos
+  // sacosArr holds numbers (for calculations); sacosRaw holds display strings (preserves "3.")
   const [sacosArr, setSacosArr] = useState(Array(7).fill(0))
-  const updSacos = (i, val) => setSacosArr(prev => {
-    const a = [...prev]; a[i] = Math.max(0, val); return a
-  })
+  const [sacosRaw, setSacosRaw] = useState(Array(7).fill(''))
+  const updSacos = (i, raw) => {
+    setSacosRaw(prev => { const a = [...prev]; a[i] = raw; return a })
+    setSacosArr(prev => { const a = [...prev]; a[i] = Math.max(0, parseFloat(raw) || 0); return a })
+  }
   const [precioSaco, setPrecioSaco] = useState('')
   const [diasConDescuento, setDiasConDescuento] = useState(Array(7).fill(false))
   const [precioSacoDescuento, setPrecioSacoDescuento] = useState('')
@@ -129,7 +132,9 @@ export default function NominaForm() {
         }
       } else if (emp.tipo === 'Tortillero') {
         if (existente.produccionDiaria?.sacos) {
-          setSacosArr([...existente.produccionDiaria.sacos])
+          const nums = [...existente.produccionDiaria.sacos]
+          setSacosArr(nums)
+          setSacosRaw(nums.map(v => v ? String(v) : ''))
           setDiasConDescuento(existente.produccionDiaria.diasConDescuento
             ? [...existente.produccionDiaria.diasConDescuento]
             : Array(7).fill(false))
@@ -139,6 +144,7 @@ export default function NominaForm() {
           const total = p[0]?.cantidad || 0
           if (total) arr[0] = total
           setSacosArr(arr)
+          setSacosRaw(arr.map(v => v ? String(v) : ''))
           setDiasConDescuento(Array(7).fill(false))
           setPrecioSacoDescuento('')
         }
@@ -154,6 +160,7 @@ export default function NominaForm() {
     } else {
       setProdDiaria(defaultProdDiaria())
       setSacosArr(Array(7).fill(0))
+      setSacosRaw(Array(7).fill(''))
       setDiasConDescuento(Array(7).fill(false))
       setPrecioSacoDescuento('')
       setDias(0); setBonos([]); setExtras([])
@@ -337,11 +344,8 @@ export default function NominaForm() {
                   </div>
                   <div className="grid grid-cols-7 gap-1 mb-1">
                     {sacosArr.map((v, i) => (
-                      <input key={i} inputMode="decimal" value={v === 0 ? '' : v} placeholder="0"
-                        onChange={e => {
-                          const raw = e.target.value.replace(/[^\d.]/g, '')
-                          updSacos(i, parseFloat(raw) || 0)
-                        }}
+                      <input key={i} inputMode="decimal" value={sacosRaw[i]} placeholder="0"
+                        onChange={e => updSacos(i, e.target.value.replace(/[^\d.]/g, ''))}
                         className={[
                           'w-full text-center border rounded-[8px] h-10 text-[13px] font-bold tabular-nums outline-none transition-colors',
                           diasConDescuento[i]
