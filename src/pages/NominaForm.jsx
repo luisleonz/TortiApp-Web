@@ -18,6 +18,47 @@ const defaultProdDiaria = () => Object.fromEntries(
   ])
 )
 
+function ItemList({ items, setItems, label, placeholder }) {
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[15px] font-bold text-ink">{label}</span>
+        <button type="button"
+          onClick={() => setItems(prev => [...prev, { desc: '', monto: '' }])}
+          className="text-sm font-bold text-amber-600 flex items-center gap-1">
+          <PlusIcon className="w-4 h-4" /> Agregar
+        </button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {items.map((it, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input placeholder={placeholder} value={it.desc}
+              onChange={e => {
+                const v = e.target.value
+                setItems(prev => prev.map((x, j) => j === i ? { ...x, desc: v } : x))
+              }}
+              className="flex-1 h-11 border border-line rounded-field bg-surface-2 px-3 text-[15px] text-ink font-sans outline-none focus:border-amber-500 transition-colors" />
+            <div className="flex items-center h-11 border border-line rounded-field bg-surface-2 px-3 w-28 shrink-0 overflow-hidden">
+              <span className="text-ink-3 font-bold text-sm mr-1">$</span>
+              <input inputMode="decimal" placeholder="0" value={it.monto}
+                onChange={e => {
+                  const v = e.target.value.replace(/[^\d.]/g, '')
+                  setItems(prev => prev.map((x, j) => j === i ? { ...x, monto: v } : x))
+                }}
+                className="flex-1 min-w-0 bg-transparent border-none outline-none text-right font-bold text-[15px] text-ink tabular-nums" />
+            </div>
+            <button type="button"
+              onClick={() => setItems(prev => prev.filter((_, j) => j !== i))}
+              className="w-9 h-9 flex items-center justify-center rounded-card text-ink-3">
+              <XIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 export default function NominaForm() {
   const { id: empId } = useParams()
   const [params] = useSearchParams()
@@ -160,39 +201,6 @@ export default function NominaForm() {
     if (!calc) return
     generarRecibo({ empNombre: emp.nombre, semana: week, tipo: emp.tipo, ...calc })
   }
-
-  const addItem = (setter) => setter(prev => [...prev, { desc: '', monto: '' }])
-  const updItem = (setter, i, field, val) => setter(prev => prev.map((it, j) => j === i ? { ...it, [field]: val } : it))
-  const delItem = (setter, i) => setter(prev => prev.filter((_, j) => j !== i))
-
-  const ItemList = ({ items, setItems, label, placeholder }) => (
-    <Card>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[15px] font-bold text-ink">{label}</span>
-        <button type="button" onClick={() => addItem(setItems)} className="text-sm font-bold text-amber-600 flex items-center gap-1">
-          <PlusIcon className="w-4 h-4" /> Agregar
-        </button>
-      </div>
-      <div className="flex flex-col gap-2">
-        {items.map((it, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <input placeholder={placeholder} value={it.desc}
-              onChange={e => updItem(setItems, i, 'desc', e.target.value)}
-              className="flex-1 h-11 border border-line rounded-field bg-surface-2 px-3 text-[15px] text-ink font-sans outline-none focus:border-amber-500 transition-colors" />
-            <div className="flex items-center h-11 border border-line rounded-field bg-surface-2 px-3 w-28 shrink-0">
-              <span className="text-ink-3 font-bold text-sm mr-1">$</span>
-              <input inputMode="decimal" placeholder="0" value={it.monto}
-                onChange={e => updItem(setItems, i, 'monto', e.target.value.replace(/[^\d.]/g, ''))}
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-right font-bold text-[15px] text-ink tabular-nums" />
-            </div>
-            <button type="button" onClick={() => delItem(setItems, i)} className="w-9 h-9 flex items-center justify-center rounded-card text-ink-3">
-              <XIcon className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
 
   // Shared day-grid input styles
   const dayInput = (focusColor = 'focus:border-amber-400') =>
@@ -375,7 +383,7 @@ export default function NominaForm() {
                 <div className="text-[15px] font-semibold text-ink">Abono a préstamo</div>
                 {saldoPrestamo > 0 && <div className="text-xs text-amber-600 font-semibold mt-0.5">Saldo: {money0(saldoPrestamo)}</div>}
               </div>
-              <div className="flex items-center h-11 border border-line rounded-[11px] bg-surface-2 px-3 w-28 shrink-0">
+              <div className="flex items-center h-11 border border-line rounded-[11px] bg-surface-2 px-3 w-28 shrink-0 overflow-hidden">
                 <span className="text-red-500 font-bold text-sm mr-0.5">−$</span>
                 <input inputMode="decimal" placeholder="0" value={abonosPrestamo}
                   onChange={e => setAbonosPrestamo(e.target.value.replace(/[^\d.]/g, ''))}
@@ -387,7 +395,7 @@ export default function NominaForm() {
                 <div className="text-[15px] font-semibold text-ink">Crédito de tienda</div>
                 {saldoCredito > 0 && <div className="text-xs text-amber-600 font-semibold mt-0.5">Saldo: {money0(saldoCredito)}</div>}
               </div>
-              <div className="flex items-center h-11 border border-line rounded-[11px] bg-surface-2 px-3 w-28 shrink-0">
+              <div className="flex items-center h-11 border border-line rounded-[11px] bg-surface-2 px-3 w-28 shrink-0 overflow-hidden">
                 <span className="text-red-500 font-bold text-sm mr-0.5">−$</span>
                 <input inputMode="decimal" placeholder="0" value={abonoCreditoTienda}
                   onChange={e => setAbonoCreditoTienda(e.target.value.replace(/[^\d.]/g, ''))}

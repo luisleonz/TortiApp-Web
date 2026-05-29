@@ -9,7 +9,7 @@ function PriceRow({ label, value, onChange, dotColor }) {
     <div className="flex items-center gap-3 py-3 border-b border-line last:border-0">
       <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
       <div className="flex-1 text-[14px] font-semibold text-ink-2">{label}</div>
-      <div className="flex items-center gap-1 bg-surface-2 border border-line rounded-[11px] h-10 w-28 px-3">
+      <div className="flex items-center gap-1 bg-surface-2 border border-line rounded-[11px] h-10 w-28 px-3 overflow-hidden">
         <span className="text-ink-3 font-bold text-sm">$</span>
         <input inputMode="decimal" value={value}
           onChange={e => onChange(e.target.value.replace(/[^\d.]/g, ''))}
