@@ -7,9 +7,13 @@ import {
 } from '../components/ui'
 import { useStore, useEmpleado, useTarifas, useNomina, usePrestamo, useCredito, useAsistencia } from '../store/context'
 import { calcNomina, buildProduccion, PANES } from '../utils/calc'
-import { weekId, weekLabel, weekLong } from '../utils/dates'
+import { weekId, weekLabel } from '../utils/dates'
 import { money, money0 } from '../utils/format'
 import { generarRecibo } from '../utils/pdf'
+
+const defaultProd = () => Object.fromEntries(
+  PANES.flatMap(p => [[`${p.k}_dd`, 0], [`${p.k}_da`, 0]])
+)
 
 export default function NominaForm() {
   const { id: empId } = useParams()
@@ -25,71 +29,73 @@ export default function NominaForm() {
   const saldoCredito = useCredito(empId)
   const asistenciaDias = useAsistencia(empId, week)
 
-  // Producción state
-  const [panDulce, setPanDulce] = useState(0)
-  const [panBlanco, setPanBlanco] = useState(0)
-  const [panAjonjoli, setPanAjonjoli] = useState(0)
-  const [galletas, setGalletas] = useState(0)
+  // Panadero production (two-tier per bread type)
+  const [prod, setProd] = useState(defaultProd)
+  const updProd = (k, v) => setProd(p => ({ ...p, [k]: v }))
+
+  // Tortillero / Mostrador fields
   const [sacos, setSacos] = useState(0)
   const [precioSaco, setPrecioSaco] = useState('')
   const [dias, setDias] = useState(0)
   const [sueldoDiario, setSueldoDiario] = useState('')
 
-  // Ajustes state
+  // Ajustes
   const [bonos, setBonos] = useState([])
   const [extras, setExtras] = useState([])
   const [abonosPrestamo, setAbonosPrestamo] = useState('')
   const [abonoCreditoTienda, setAbonoCreditoTienda] = useState('')
 
   const [toast, setToast] = useState('')
-
   const showToast = m => { setToast(m); setTimeout(() => setToast(''), 2500) }
 
-  // Cargar datos existentes o defaults
   useEffect(() => {
     if (!emp) return
     if (existente) {
-      // Rellenar desde nómina guardada
-      const prod = existente.produccion || []
+      const p = existente.produccion || []
       if (emp.tipo === 'Panadero') {
-        setPanDulce(prod.find(p => p.tipo === 'panDulce')?.cantidad || 0)
-        setPanBlanco(prod.find(p => p.tipo === 'panBlanco')?.cantidad || 0)
-        setPanAjonjoli(prod.find(p => p.tipo === 'panAjonjoli')?.cantidad || 0)
-        setGalletas(prod.find(p => p.tipo === 'galletas')?.cantidad || 0)
+        const loaded = defaultProd()
+        PANES.forEach(pan => {
+          const dd = p.find(l => l.tipo === `${pan.k}_dd`)
+          const da = p.find(l => l.tipo === `${pan.k}_da`)
+          const old = p.find(l => l.tipo === pan.k)
+          if (dd) loaded[`${pan.k}_dd`] = dd.cantidad || 0
+          if (da) loaded[`${pan.k}_da`] = da.cantidad || 0
+          if (!dd && !da && old) loaded[`${pan.k}_dd`] = old.cantidad || 0
+        })
+        setProd(loaded)
       } else if (emp.tipo === 'Tortillero') {
-        setSacos(prod[0]?.cantidad || 0)
-        setPrecioSaco(String(prod[0]?.precioUnitario || tarifas.precioPorSaco))
+        setSacos(p[0]?.cantidad || 0)
+        setPrecioSaco(String(p[0]?.precioUnitario || tarifas.precioPorSaco))
       } else {
-        setDias(prod[0]?.cantidad || 0)
-        setSueldoDiario(String(prod[0]?.precioUnitario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador))
+        setDias(p[0]?.cantidad || 0)
+        setSueldoDiario(String(p[0]?.precioUnitario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador))
       }
       setBonos(existente.bonos || [])
       setExtras(existente.extras || [])
       setAbonosPrestamo(String(existente.abonosPrestamo || ''))
       setAbonoCreditoTienda(String(existente.abonoCreditoTienda || ''))
     } else {
-      // Defaults frescos — resetear todos los campos
-      setPanDulce(0); setPanBlanco(0); setPanAjonjoli(0); setGalletas(0)
+      setProd(defaultProd())
       setSacos(0); setBonos([]); setExtras([])
       setAbonosPrestamo(''); setAbonoCreditoTienda('')
       if (emp.tipo === 'Tortillero') setPrecioSaco(String(tarifas.precioPorSaco))
       else if (emp.tipo === 'Mostrador') {
         setSueldoDiario(String(emp.sueldoDiario || tarifas.sueldoDiarioMostrador))
-        // Auto-cargar días de asistencia registrados
         setDias(asistenciaDias.filter(Boolean).length)
       }
     }
   }, [emp?.id, week])
 
-  // Construir objeto nómina para calcular
   const nominaData = useMemo(() => {
     if (!emp) return null
     const produccion = buildProduccion(emp.tipo,
-      { panDulce, panBlanco, panAjonjoli, galletas, sacos, precioSaco: +precioSaco || tarifas.precioPorSaco, dias, sueldoDiario: +sueldoDiario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador },
+      emp.tipo === 'Panadero'
+        ? prod
+        : { sacos, precioSaco: +precioSaco || tarifas.precioPorSaco, dias, sueldoDiario: +sueldoDiario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador },
       tarifas
     )
     return { tipo: emp.tipo, produccion, bonos, extras, abonosPrestamo: +abonosPrestamo || 0, abonoCreditoTienda: +abonoCreditoTienda || 0 }
-  }, [emp, panDulce, panBlanco, panAjonjoli, galletas, sacos, precioSaco, dias, sueldoDiario, bonos, extras, abonosPrestamo, abonoCreditoTienda, tarifas])
+  }, [emp, prod, sacos, precioSaco, dias, sueldoDiario, bonos, extras, abonosPrestamo, abonoCreditoTienda, tarifas])
 
   const calc = useMemo(() => nominaData ? calcNomina(nominaData) : null, [nominaData])
 
@@ -116,7 +122,6 @@ export default function NominaForm() {
     generarRecibo({ empNombre: emp.nombre, semana: week, tipo: emp.tipo, ...calc })
   }
 
-  // Helpers para bonos/extras
   const addItem = (setter) => setter(prev => [...prev, { desc: '', monto: '' }])
   const updItem = (setter, i, field, val) => setter(prev => prev.map((it, j) => j === i ? { ...it, [field]: val } : it))
   const delItem = (setter, i) => setter(prev => prev.filter((_, j) => j !== i))
@@ -160,7 +165,6 @@ export default function NominaForm() {
         }
       />
       <div className="p-4 pb-28 flex flex-col gap-5">
-        {/* Empleado info */}
         <div className="flex items-center gap-3">
           <Avatar emp={emp} size="lg" />
           <div>
@@ -172,27 +176,46 @@ export default function NominaForm() {
         {/* Producción */}
         <div>
           <SectionLabel>Producción</SectionLabel>
+
           {emp.tipo === 'Panadero' && (
             <div className="flex flex-col gap-3">
-              {[
-                { k: 'panDulce', label: 'Pan dulce', val: panDulce, set: setPanDulce },
-                { k: 'panBlanco', label: 'Pan blanco', val: panBlanco, set: setPanBlanco },
-                { k: 'panAjonjoli', label: 'Ajonjolí', val: panAjonjoli, set: setPanAjonjoli },
-                { k: 'galletas', label: 'Galletas', val: galletas, set: setGalletas },
-              ].map(p => (
-                <Card key={p.k} className="!p-3.5">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                      <span className="font-bold text-[15px] text-ink">{p.label}</span>
+              {PANES.map(p => {
+                const tarifa = tarifas[p.k] || { delDia: 0, diaAnterior: 0 }
+                const vDd = prod[`${p.k}_dd`] || 0
+                const vDa = prod[`${p.k}_da`] || 0
+                const subtotal = vDd * (tarifa.delDia || 0) + vDa * (tarifa.diaAnterior || 0)
+                return (
+                  <Card key={p.k} className="!p-3.5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span className="font-bold text-[15px] text-ink">{p.label}</span>
+                      </div>
+                      <span className="text-sm font-extrabold text-amber-600 tabular-nums">{money0(subtotal)}</span>
                     </div>
-                    <span className="text-sm text-ink-3 font-semibold tabular-nums">
-                      {money(tarifas[p.k])} c/u → <b className="text-amber-600">{money0(p.val * tarifas[p.k])}</b>
-                    </span>
-                  </div>
-                  <NumField value={p.val} onChange={p.set} suffix="piezas" />
-                </Card>
-              ))}
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[88px] shrink-0">
+                          <div className="text-xs font-bold text-ink-2">Del día</div>
+                          <div className="text-[11px] text-ink-3 tabular-nums">{money(tarifa.delDia || 0)}/pza</div>
+                        </div>
+                        <div className="flex-1">
+                          <NumField value={vDd} onChange={v => updProd(`${p.k}_dd`, v)} suffix="pzas" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[88px] shrink-0">
+                          <div className="text-xs font-bold text-ink-2">Día anterior</div>
+                          <div className="text-[11px] text-ink-3 tabular-nums">{money(tarifa.diaAnterior || 0)}/pza</div>
+                        </div>
+                        <div className="flex-1">
+                          <NumField value={vDa} onChange={v => updProd(`${p.k}_da`, v)} suffix="pzas" />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
             </div>
           )}
 
@@ -200,7 +223,7 @@ export default function NominaForm() {
             <div className="flex flex-col gap-3">
               <Card className="!p-3.5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-brown-500 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-stone-500 shrink-0" />
                   <span className="font-bold text-[15px] text-ink">Sacos producidos</span>
                   <span className="ml-auto text-xs text-ink-3 font-semibold">esta semana</span>
                 </div>
@@ -222,7 +245,7 @@ export default function NominaForm() {
               </Card>
               <div className="flex justify-between text-sm px-1.5">
                 <span className="font-semibold text-ink-2 tabular-nums">{sacos} sacos × {money(+precioSaco || tarifas.precioPorSaco)}</span>
-                <span className="font-extrabold text-brown-600 tabular-nums">{money(sacos * (+precioSaco || tarifas.precioPorSaco))}</span>
+                <span className="font-extrabold text-stone-600 tabular-nums">{money(sacos * (+precioSaco || tarifas.precioPorSaco))}</span>
               </div>
             </div>
           )}

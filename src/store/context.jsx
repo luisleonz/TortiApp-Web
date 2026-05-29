@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
-import { loadState, saveState, newId } from '../utils/storage'
+import { loadState, saveState, newId, migrateState } from '../utils/storage'
 import { weekId } from '../utils/dates'
+import { loadFromSupabase, saveToSupabase } from '../utils/supabase'
 
 const Ctx = createContext(null)
 
@@ -112,7 +113,21 @@ function reducer(state, action) {
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, null, loadState)
 
+  // On mount: load from Supabase and apply if available (handles new device / data recovery)
+  useEffect(() => {
+    loadFromSupabase().then(remote => {
+      if (remote) dispatch({ type: 'RESET', payload: migrateState(remote) })
+    })
+  }, [])
+
+  // Persist to localStorage on every change
   useEffect(() => { saveState(state) }, [state])
+
+  // Debounced sync to Supabase
+  useEffect(() => {
+    const t = setTimeout(() => saveToSupabase(state), 1500)
+    return () => clearTimeout(t)
+  }, [state])
 
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>
 }

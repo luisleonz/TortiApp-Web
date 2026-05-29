@@ -1,7 +1,5 @@
 const KEY = 'tortiapp_v3'
 
-function now() { return new Date().toISOString() }
-
 // ── Seed data ─────────────────────────────────────────────────
 function seed() {
   return {
@@ -14,10 +12,10 @@ function seed() {
       { id: 'e6', nombre: 'Ana López', tipo: 'Mostrador', sueldoDiario: 260, fechaIngreso: '2023-02-10', nss: '', direccion: '', telefono: '729 660 8899', fotoUrl: null, activo: true },
     ],
     tarifas: {
-      panDulce: 1.5,
-      panBlanco: 1.2,
-      panAjonjoli: 1.8,
-      galletas: 2.0,
+      panDulce:   { delDia: 1.5, diaAnterior: 1.0 },
+      panBlanco:  { delDia: 1.2, diaAnterior: 0.8 },
+      panAjonjoli: { delDia: 1.8, diaAnterior: 1.2 },
+      galletas:   { delDia: 2.0, diaAnterior: 1.5 },
       precioPorSaco: 180,
       sueldoDiarioMostrador: 280,
     },
@@ -32,15 +30,33 @@ function seed() {
   }
 }
 
+const BREAD_KEYS = ['panDulce', 'panBlanco', 'panAjonjoli', 'galletas']
+
+// Converts old single-price tarifas to the two-tier format
+export function migrateState(state) {
+  if (!state) return state
+  if (state.tarifas) {
+    const t = { ...state.tarifas }
+    let changed = false
+    BREAD_KEYS.forEach(k => {
+      if (typeof t[k] === 'number') {
+        t[k] = { delDia: t[k], diaAnterior: t[k] }
+        changed = true
+      }
+    })
+    if (changed) state = { ...state, tarifas: t }
+  }
+  if (!state.creditoTienda) state = { ...state, creditoTienda: [] }
+  if (!state.prestamos) state = { ...state, prestamos: [] }
+  return state
+}
+
 // ── Load / save ────────────────────────────────────────────────
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     const parsed = raw ? JSON.parse(raw) : seed()
-    // Migrate older keys
-    if (!parsed.creditoTienda) parsed.creditoTienda = []
-    if (!parsed.prestamos) parsed.prestamos = []
-    return parsed
+    return migrateState(parsed)
   } catch {
     return seed()
   }

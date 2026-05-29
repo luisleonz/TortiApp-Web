@@ -6,10 +6,10 @@ import { PANES } from '../utils/calc'
 
 function PriceRow({ label, value, onChange, dotColor }) {
   return (
-    <div className="flex items-center gap-3 py-3.5 border-b border-line last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b border-line last:border-0">
       <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-      <div className="flex-1 text-[15px] font-semibold text-ink">{label}</div>
-      <div className="flex items-center gap-1 bg-surface-2 border border-line rounded-[11px] h-11 w-28 px-3">
+      <div className="flex-1 text-[14px] font-semibold text-ink-2">{label}</div>
+      <div className="flex items-center gap-1 bg-surface-2 border border-line rounded-[11px] h-10 w-28 px-3">
         <span className="text-ink-3 font-bold text-sm">$</span>
         <input inputMode="decimal" value={value}
           onChange={e => onChange(e.target.value.replace(/[^\d.]/g, ''))}
@@ -28,9 +28,19 @@ export default function Tarifas({ embedded = false }) {
   useEffect(() => { setT({ ...tarifas }) }, [tarifas])
 
   const upd = (k, v) => setT(p => ({ ...p, [k]: v }))
+
   const save = () => {
-    const clean = {}
-    Object.entries(t).forEach(([k, v]) => { clean[k] = +v || 0 })
+    const clean = { ...t }
+    PANES.forEach(p => {
+      const val = t[p.k]
+      if (val && typeof val === 'object') {
+        clean[p.k] = { delDia: +val.delDia || 0, diaAnterior: +val.diaAnterior || 0 }
+      } else {
+        clean[p.k] = { delDia: +val || 0, diaAnterior: +val || 0 }
+      }
+    })
+    clean.precioPorSaco = +t.precioPorSaco || 0
+    clean.sueldoDiarioMostrador = +t.sueldoDiarioMostrador || 0
     dispatch({ type: 'SET_TARIFAS', payload: clean })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -47,16 +57,30 @@ export default function Tarifas({ embedded = false }) {
         <div>
           <SectionLabel>Pan — precio por pieza (Panaderos)</SectionLabel>
           <Card>
-            {PANES.map(p => (
-              <PriceRow key={p.k} label={p.label} dotColor="bg-amber-500" value={t[p.k] ?? ''} onChange={v => upd(p.k, v)} />
-            ))}
+            {PANES.map((p, i) => {
+              const tarifa = t[p.k] || { delDia: '', diaAnterior: '' }
+              return (
+                <div key={p.k} className={i > 0 ? 'border-t border-line mt-1 pt-1' : ''}>
+                  <div className="flex items-center gap-2 pt-2.5 pb-0.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                    <span className="text-[14px] font-bold text-ink">{p.label}</span>
+                  </div>
+                  <PriceRow label="Del día" dotColor="bg-amber-400"
+                    value={typeof tarifa === 'object' ? (tarifa.delDia ?? '') : (tarifa ?? '')}
+                    onChange={v => upd(p.k, { ...(typeof tarifa === 'object' ? tarifa : { delDia: tarifa, diaAnterior: tarifa }), delDia: v })} />
+                  <PriceRow label="Día anterior" dotColor="bg-amber-200"
+                    value={typeof tarifa === 'object' ? (tarifa.diaAnterior ?? '') : (tarifa ?? '')}
+                    onChange={v => upd(p.k, { ...(typeof tarifa === 'object' ? tarifa : { delDia: tarifa, diaAnterior: tarifa }), diaAnterior: v })} />
+                </div>
+              )
+            })}
           </Card>
         </div>
 
         <div>
           <SectionLabel>Tortilleros</SectionLabel>
           <Card>
-            <PriceRow label="Precio base por saco" dotColor="bg-brown-500" value={t.precioPorSaco ?? ''} onChange={v => upd('precioPorSaco', v)} />
+            <PriceRow label="Precio base por saco" dotColor="bg-stone-500" value={t.precioPorSaco ?? ''} onChange={v => upd('precioPorSaco', v)} />
           </Card>
         </div>
 
