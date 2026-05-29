@@ -52,12 +52,18 @@ export function calcNomina(n) {
       }
     })
   } else if (tipo === 'Tortillero') {
-    const line = prod[0] || {}
-    const qty = +line.cantidad || 0
-    const rate = +line.precioUnitario || 0
-    const sub = qty * rate
-    baseLineas.push({ label: 'Sacos de harina', qty, rate, sub })
-    base = sub
+    const lineN = prod.find(l => l.tipo === 'sacos') || prod[0] || {}
+    const lineD = prod.find(l => l.tipo === 'sacos_desc')
+    const qtyN = +lineN.cantidad || 0
+    const rateN = +lineN.precioUnitario || 0
+    baseLineas.push({ label: 'Sacos de harina', qty: qtyN, rate: rateN, sub: qtyN * rateN })
+    base += qtyN * rateN
+    if (lineD && +lineD.cantidad > 0) {
+      const qtyD = +lineD.cantidad || 0
+      const rateD = +lineD.precioUnitario || 0
+      baseLineas.push({ label: 'Sacos c/precio especial', qty: qtyD, rate: rateD, sub: qtyD * rateD })
+      base += qtyD * rateD
+    }
   } else {
     // Mostrador
     const line = prod[0] || {}
@@ -90,7 +96,14 @@ export function buildProduccion(tipo, data, tarifas) {
     return lines
   }
   if (tipo === 'Tortillero') {
-    return [{ tipo: 'sacos', cantidad: +data.sacos || 0, precioUnitario: +data.precioSaco || tarifas.precioPorSaco }]
+    const normalPrice = +data.precioSaco || tarifas.precioPorSaco
+    const sacosN = +(data.sacosNormal ?? data.sacos) || 0
+    const lines = [{ tipo: 'sacos', cantidad: sacosN, precioUnitario: normalPrice }]
+    if (+data.sacosDescuento > 0) {
+      const descPrice = +data.precioSacoDescuento || normalPrice
+      lines.push({ tipo: 'sacos_desc', cantidad: +data.sacosDescuento, precioUnitario: descPrice })
+    }
+    return lines
   }
   // Mostrador
   return [{ tipo: 'dias', cantidad: +data.dias || 0, precioUnitario: +data.sueldoDiario || tarifas.sueldoDiarioMostrador }]

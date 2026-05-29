@@ -89,6 +89,9 @@ export default function NominaForm() {
     const a = [...prev]; a[i] = Math.max(0, val); return a
   })
   const [precioSaco, setPrecioSaco] = useState('')
+  const [diasConDescuento, setDiasConDescuento] = useState(Array(7).fill(false))
+  const [precioSacoDescuento, setPrecioSacoDescuento] = useState('')
+  const toggleDescuento = i => setDiasConDescuento(prev => { const a = [...prev]; a[i] = !a[i]; return a })
 
   // Mostrador
   const [dias, setDias] = useState(0)
@@ -127,11 +130,17 @@ export default function NominaForm() {
       } else if (emp.tipo === 'Tortillero') {
         if (existente.produccionDiaria?.sacos) {
           setSacosArr([...existente.produccionDiaria.sacos])
+          setDiasConDescuento(existente.produccionDiaria.diasConDescuento
+            ? [...existente.produccionDiaria.diasConDescuento]
+            : Array(7).fill(false))
+          setPrecioSacoDescuento(String(existente.produccionDiaria.precioSacoDescuento || ''))
         } else {
           const arr = Array(7).fill(0)
           const total = p[0]?.cantidad || 0
           if (total) arr[0] = total
           setSacosArr(arr)
+          setDiasConDescuento(Array(7).fill(false))
+          setPrecioSacoDescuento('')
         }
         setPrecioSaco(String(p[0]?.precioUnitario || tarifas.precioPorSaco))
       } else {
@@ -145,6 +154,8 @@ export default function NominaForm() {
     } else {
       setProdDiaria(defaultProdDiaria())
       setSacosArr(Array(7).fill(0))
+      setDiasConDescuento(Array(7).fill(false))
+      setPrecioSacoDescuento('')
       setDias(0); setBonos([]); setExtras([])
       setAbonosPrestamo(''); setAbonoCreditoTienda('')
       if (emp.tipo === 'Tortillero') setPrecioSaco(String(tarifas.precioPorSaco))
@@ -164,7 +175,14 @@ export default function NominaForm() {
         prodData[`${p.k}_da`] = prodDiaria[`${p.k}_da`].reduce((s, v) => s + v, 0)
       })
     } else if (emp.tipo === 'Tortillero') {
-      prodData = { sacos: sacosArr.reduce((s, v) => s + v, 0), precioSaco: +precioSaco || tarifas.precioPorSaco }
+      const sacosNormal = sacosArr.reduce((s, v, i) => s + (diasConDescuento[i] ? 0 : v), 0)
+      const sacosDescuento = sacosArr.reduce((s, v, i) => s + (diasConDescuento[i] ? v : 0), 0)
+      prodData = {
+        sacosNormal,
+        sacosDescuento,
+        precioSaco: +precioSaco || tarifas.precioPorSaco,
+        precioSacoDescuento: +precioSacoDescuento || undefined,
+      }
     } else {
       prodData = { dias, sueldoDiario: +sueldoDiario || emp.sueldoDiario || tarifas.sueldoDiarioMostrador }
     }
@@ -172,10 +190,10 @@ export default function NominaForm() {
     const produccionDiaria = emp.tipo === 'Panadero'
       ? { ...prodDiaria }
       : emp.tipo === 'Tortillero'
-      ? { sacos: [...sacosArr] }
+      ? { sacos: [...sacosArr], diasConDescuento: [...diasConDescuento], precioSacoDescuento: precioSacoDescuento || undefined }
       : null
     return { tipo: emp.tipo, produccion, bonos, extras, abonosPrestamo: +abonosPrestamo || 0, abonoCreditoTienda: +abonoCreditoTienda || 0, produccionDiaria }
-  }, [emp, prodDiaria, sacosArr, precioSaco, dias, sueldoDiario, bonos, extras, abonosPrestamo, abonoCreditoTienda, tarifas])
+  }, [emp, prodDiaria, sacosArr, diasConDescuento, precioSaco, precioSacoDescuento, dias, sueldoDiario, bonos, extras, abonosPrestamo, abonoCreditoTienda, tarifas])
 
   const calc = useMemo(() => nominaData ? calcNomina(nominaData) : null, [nominaData])
 
@@ -289,57 +307,114 @@ export default function NominaForm() {
           )}
 
           {/* TORTILLERO — cuadrícula 7 días para sacos */}
-          {emp.tipo === 'Tortillero' && (
-            <div className="flex flex-col gap-3">
-              <Card className="!p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-stone-500 shrink-0" />
-                    <span className="font-bold text-[14px] text-ink">Sacos producidos</span>
+          {emp.tipo === 'Tortillero' && (() => {
+            const pN = +precioSaco || tarifas.precioPorSaco
+            const pD = +precioSacoDescuento || pN
+            const sacosN = sacosArr.reduce((s, v, i) => s + (diasConDescuento[i] ? 0 : v), 0)
+            const sacosD = sacosArr.reduce((s, v, i) => s + (diasConDescuento[i] ? v : 0), 0)
+            const hayDescuento = diasConDescuento.some(Boolean)
+            return (
+              <div className="flex flex-col gap-3">
+                <Card className="!p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-500 shrink-0" />
+                      <span className="font-bold text-[14px] text-ink">Sacos producidos</span>
+                    </div>
+                    <span className="text-sm font-extrabold text-stone-700 tabular-nums">
+                      = {+sacosArr.reduce((s, v) => s + v, 0).toFixed(2).replace(/\.?0+$/, '')} sacos
+                    </span>
                   </div>
-                  <span className="text-sm font-extrabold text-stone-700 tabular-nums">
-                    = {sacosArr.reduce((s, v) => s + v, 0)} sacos
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-7 gap-1 mb-1">
-                  {PAYROLL_DAYS.map(d => (
-                    <div key={d} className="text-center text-[9px] font-bold text-ink-3">{d}</div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {sacosArr.map((v, i) => (
-                    <input key={i} inputMode="numeric" value={v || ''} placeholder="0"
-                      onChange={e => updSacos(i, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                      className={dayInput('focus:border-stone-400')} />
-                  ))}
-                </div>
-              </Card>
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {PAYROLL_DAYS.map(d => (
+                      <div key={d} className="text-center text-[9px] font-bold text-ink-3">{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {sacosArr.map((v, i) => (
+                      <input key={i} inputMode="decimal" value={v === 0 ? '' : v} placeholder="0"
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^\d.]/g, '')
+                          updSacos(i, parseFloat(raw) || 0)
+                        }}
+                        className={[
+                          'w-full text-center border rounded-[8px] h-10 text-[13px] font-bold tabular-nums outline-none transition-colors',
+                          diasConDescuento[i]
+                            ? 'border-orange-300 bg-orange-50 text-orange-700 focus:border-orange-400'
+                            : 'border-line bg-surface-2 text-ink focus:border-stone-400'
+                        ].join(' ')} />
+                    ))}
+                  </div>
+                  {/* Toggles de descuento por día */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {diasConDescuento.map((on, i) => (
+                      <button key={i} type="button" onClick={() => toggleDescuento(i)}
+                        title="Marcar día con precio especial"
+                        className={`h-6 rounded-[6px] text-[9px] font-bold border transition-colors ${
+                          on
+                            ? 'bg-orange-100 text-orange-600 border-orange-200'
+                            : 'bg-surface-2 text-ink-3 border-line/50'
+                        }`}>
+                        {on ? '↓$' : '·'}
+                      </button>
+                    ))}
+                  </div>
 
-              <Card className="!p-3.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-[15px] text-ink">Precio por saco</div>
-                    <div className="text-xs text-ink-3 mt-0.5">Solo para esta nómina</div>
+                  {/* Precio especial para días marcados */}
+                  {hayDescuento && (
+                    <div className="mt-2.5 p-2.5 bg-orange-50 rounded-[10px] border border-orange-100 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-bold text-orange-700 leading-tight">Precio especial</div>
+                        <div className="text-[10px] text-orange-500 mt-0.5">{sacosD.toFixed(1).replace(/\.0$/, '')} sacos marcados</div>
+                      </div>
+                      <div className="flex items-center h-9 border border-orange-200 rounded-[9px] bg-white px-2.5 w-24 overflow-hidden shrink-0">
+                        <span className="text-orange-400 font-bold text-sm mr-1">$</span>
+                        <input inputMode="decimal" value={precioSacoDescuento} placeholder="0"
+                          onChange={e => setPrecioSacoDescuento(e.target.value.replace(/[^\d.]/g, ''))}
+                          className="flex-1 min-w-0 bg-transparent border-none outline-none text-right font-bold text-sm text-orange-700 tabular-nums" />
+                      </div>
+                    </div>
+                  )}
+                </Card>
+
+                <Card className="!p-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-[15px] text-ink">Precio por saco</div>
+                      <div className="text-xs text-ink-3 mt-0.5">Precio normal</div>
+                    </div>
+                    <div className="flex items-center h-12 border border-line rounded-[11px] bg-surface-2 px-3 w-28 overflow-hidden">
+                      <span className="text-ink-3 font-bold mr-1">$</span>
+                      <input inputMode="decimal" value={precioSaco}
+                        onChange={e => setPrecioSaco(e.target.value.replace(/[^\d.]/g, ''))}
+                        className="flex-1 bg-transparent border-none outline-none text-right font-bold text-base text-ink tabular-nums" />
+                    </div>
                   </div>
-                  <div className="flex items-center h-12 border border-line rounded-[11px] bg-surface-2 px-3 w-28">
-                    <span className="text-ink-3 font-bold mr-1">$</span>
-                    <input inputMode="decimal" value={precioSaco}
-                      onChange={e => setPrecioSaco(e.target.value.replace(/[^\d.]/g, ''))}
-                      className="flex-1 bg-transparent border-none outline-none text-right font-bold text-base text-ink tabular-nums" />
-                  </div>
+                </Card>
+
+                {/* Resumen de producción */}
+                <div className="flex flex-col gap-1 px-1.5">
+                  {sacosN > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="font-semibold text-ink-2 tabular-nums">
+                        {+sacosN.toFixed(2).replace(/\.?0+$/, '')} sacos × {money(pN)}
+                      </span>
+                      <span className="font-extrabold text-stone-700 tabular-nums">{money(sacosN * pN)}</span>
+                    </div>
+                  )}
+                  {sacosD > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="font-semibold text-orange-600 tabular-nums">
+                        {+sacosD.toFixed(2).replace(/\.?0+$/, '')} sacos × {money(pD)} (especial)
+                      </span>
+                      <span className="font-extrabold text-orange-600 tabular-nums">{money(sacosD * pD)}</span>
+                    </div>
+                  )}
                 </div>
-              </Card>
-              <div className="flex justify-between text-sm px-1.5">
-                <span className="font-semibold text-ink-2 tabular-nums">
-                  {sacosArr.reduce((s, v) => s + v, 0)} sacos × {money(+precioSaco || tarifas.precioPorSaco)}
-                </span>
-                <span className="font-extrabold text-stone-700 tabular-nums">
-                  {money(sacosArr.reduce((s, v) => s + v, 0) * (+precioSaco || tarifas.precioPorSaco))}
-                </span>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* MOSTRADOR */}
           {emp.tipo === 'Mostrador' && (
