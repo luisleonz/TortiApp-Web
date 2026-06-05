@@ -1,7 +1,5 @@
 const KEY = 'tortiapp_v3'
 
-function now() { return new Date().toISOString() }
-
 // ── Seed data ─────────────────────────────────────────────────
 function seed() {
   return {
@@ -14,10 +12,11 @@ function seed() {
       { id: 'e6', nombre: 'Ana López', tipo: 'Mostrador', sueldoDiario: 260, fechaIngreso: '2023-02-10', nss: '', direccion: '', telefono: '729 660 8899', fotoUrl: null, activo: true },
     ],
     tarifas: {
-      panDulce: 1.5,
-      panBlanco: 1.2,
-      panAjonjoli: 1.8,
-      galletas: 2.0,
+      panDulce:    { delDia: { precioVenta: 6,  porcentaje: 25 }, diaAnterior: { precioVenta: 4,  porcentaje: 25 } },
+      panGlaseado: { delDia: { precioVenta: 8,  porcentaje: 25 }, diaAnterior: { precioVenta: 6,  porcentaje: 25 } },
+      panBlanco:   { delDia: { precioVenta: 5,  porcentaje: 24 }, diaAnterior: { precioVenta: 3,  porcentaje: 24 } },
+      panAjonjoli: { delDia: { precioVenta: 7,  porcentaje: 26 }, diaAnterior: { precioVenta: 5,  porcentaje: 25 } },
+      galletas:    { delDia: { precioVenta: 8,  porcentaje: 25 }, diaAnterior: { precioVenta: 6,  porcentaje: 25 } },
       precioPorSaco: 180,
       sueldoDiarioMostrador: 280,
     },
@@ -32,15 +31,46 @@ function seed() {
   }
 }
 
+const BREAD_KEYS = ['panDulce', 'panGlaseado', 'panBlanco', 'panAjonjoli', 'galletas']
+
+// Migra tarifas de formatos viejos al nuevo { delDia:{precioVenta,porcentaje}, diaAnterior:{...} }
+export function migrateState(state) {
+  if (!state) return state
+  if (state.tarifas) {
+    const t = { ...state.tarifas }
+    let changed = false
+    BREAD_KEYS.forEach(k => {
+      const val = t[k]
+      if (typeof val === 'number') {
+        // Muy antiguo: número plano → porcentaje 100%
+        t[k] = {
+          delDia: { precioVenta: val, porcentaje: 100 },
+          diaAnterior: { precioVenta: val, porcentaje: 100 },
+        }
+        changed = true
+      } else if (val && typeof val === 'object' && typeof val.delDia !== 'object') {
+        // Formato intermedio: { delDia: number, diaAnterior: number }
+        t[k] = {
+          delDia: { precioVenta: +(val.delDia || 0), porcentaje: 100 },
+          diaAnterior: { precioVenta: +(val.diaAnterior || 0), porcentaje: 100 },
+        }
+        changed = true
+      }
+      // else ya es el formato nuevo { delDia:{precioVenta,porcentaje}, ... }
+    })
+    if (changed) state = { ...state, tarifas: t }
+  }
+  if (!state.creditoTienda) state = { ...state, creditoTienda: [] }
+  if (!state.prestamos) state = { ...state, prestamos: [] }
+  return state
+}
+
 // ── Load / save ────────────────────────────────────────────────
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     const parsed = raw ? JSON.parse(raw) : seed()
-    // Migrate older keys
-    if (!parsed.creditoTienda) parsed.creditoTienda = []
-    if (!parsed.prestamos) parsed.prestamos = []
-    return parsed
+    return migrateState(parsed)
   } catch {
     return seed()
   }

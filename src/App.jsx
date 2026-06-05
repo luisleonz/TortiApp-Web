@@ -11,6 +11,7 @@ import Nomina from './pages/Nomina'
 import NominaForm from './pages/NominaForm'
 import Historial from './pages/Historial'
 import Config from './pages/Config'
+import Prestamos from './pages/Prestamos'
 
 function AuthGuard({ children }) {
   const { pathname } = useLocation()
@@ -41,6 +42,7 @@ function AppRoutes() {
             <Route path="/historial" element={<Historial />} />
             <Route path="/historial/:semana" element={<Historial />} />
             <Route path="/config" element={<Config />} />
+            <Route path="/prestamos" element={<Prestamos />} />
           </Routes>
         </Layout>
       )}
