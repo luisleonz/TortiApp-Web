@@ -9,6 +9,16 @@ export const PANES = [
 ]
 
 /**
+ * Pago por pieza desde una tarifa de pan.
+ * Soporta { precioVenta, porcentaje } (nuevo) y número plano (legado).
+ */
+export function tarifaRate(tier) {
+  if (!tier) return 0
+  if (typeof tier === 'number') return tier
+  return Math.round((+(tier.precioVenta || 0) * +(tier.porcentaje || 0)) / 100 * 100) / 100
+}
+
+/**
  * Calcula el total de la nómina.
  * @param {{ tipo, produccion, bonos, extras, abonosPrestamo, abonoCreditoTienda }} n
  * @returns {{ baseLineas, base, bonos, extras, abono, credito, ingresos, deducciones, neto }}
@@ -91,9 +101,9 @@ export function buildProduccion(tipo, data, tarifas) {
   if (tipo === 'Panadero') {
     const lines = []
     PANES.forEach(p => {
-      const t = tarifas[p.k] || { delDia: 0, diaAnterior: 0 }
-      lines.push({ tipo: `${p.k}_dd`, cantidad: +data[`${p.k}_dd`] || 0, precioUnitario: t.delDia || 0 })
-      lines.push({ tipo: `${p.k}_da`, cantidad: +data[`${p.k}_da`] || 0, precioUnitario: t.diaAnterior || 0 })
+      const t = tarifas[p.k] || {}
+      lines.push({ tipo: `${p.k}_dd`, cantidad: +data[`${p.k}_dd`] || 0, precioUnitario: tarifaRate(t.delDia) })
+      lines.push({ tipo: `${p.k}_da`, cantidad: +data[`${p.k}_da`] || 0, precioUnitario: tarifaRate(t.diaAnterior) })
     })
     return lines
   }

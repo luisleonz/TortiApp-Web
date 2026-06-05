@@ -12,11 +12,11 @@ function seed() {
       { id: 'e6', nombre: 'Ana López', tipo: 'Mostrador', sueldoDiario: 260, fechaIngreso: '2023-02-10', nss: '', direccion: '', telefono: '729 660 8899', fotoUrl: null, activo: true },
     ],
     tarifas: {
-      panDulce:    { delDia: 1.5, diaAnterior: 1.0 },
-      panGlaseado: { delDia: 2.0, diaAnterior: 1.5 },
-      panBlanco:   { delDia: 1.2, diaAnterior: 0.8 },
-      panAjonjoli: { delDia: 1.8, diaAnterior: 1.2 },
-      galletas:    { delDia: 2.0, diaAnterior: 1.5 },
+      panDulce:    { delDia: { precioVenta: 6,  porcentaje: 25 }, diaAnterior: { precioVenta: 4,  porcentaje: 25 } },
+      panGlaseado: { delDia: { precioVenta: 8,  porcentaje: 25 }, diaAnterior: { precioVenta: 6,  porcentaje: 25 } },
+      panBlanco:   { delDia: { precioVenta: 5,  porcentaje: 24 }, diaAnterior: { precioVenta: 3,  porcentaje: 24 } },
+      panAjonjoli: { delDia: { precioVenta: 7,  porcentaje: 26 }, diaAnterior: { precioVenta: 5,  porcentaje: 25 } },
+      galletas:    { delDia: { precioVenta: 8,  porcentaje: 25 }, diaAnterior: { precioVenta: 6,  porcentaje: 25 } },
       precioPorSaco: 180,
       sueldoDiarioMostrador: 280,
     },
@@ -33,17 +33,30 @@ function seed() {
 
 const BREAD_KEYS = ['panDulce', 'panGlaseado', 'panBlanco', 'panAjonjoli', 'galletas']
 
-// Converts old single-price tarifas to the two-tier format
+// Migra tarifas de formatos viejos al nuevo { delDia:{precioVenta,porcentaje}, diaAnterior:{...} }
 export function migrateState(state) {
   if (!state) return state
   if (state.tarifas) {
     const t = { ...state.tarifas }
     let changed = false
     BREAD_KEYS.forEach(k => {
-      if (typeof t[k] === 'number') {
-        t[k] = { delDia: t[k], diaAnterior: t[k] }
+      const val = t[k]
+      if (typeof val === 'number') {
+        // Muy antiguo: número plano → porcentaje 100%
+        t[k] = {
+          delDia: { precioVenta: val, porcentaje: 100 },
+          diaAnterior: { precioVenta: val, porcentaje: 100 },
+        }
+        changed = true
+      } else if (val && typeof val === 'object' && typeof val.delDia !== 'object') {
+        // Formato intermedio: { delDia: number, diaAnterior: number }
+        t[k] = {
+          delDia: { precioVenta: +(val.delDia || 0), porcentaje: 100 },
+          diaAnterior: { precioVenta: +(val.diaAnterior || 0), porcentaje: 100 },
+        }
         changed = true
       }
+      // else ya es el formato nuevo { delDia:{precioVenta,porcentaje}, ... }
     })
     if (changed) state = { ...state, tarifas: t }
   }

@@ -6,7 +6,7 @@ import {
   PlusIcon, XIcon, ReceiptIcon, PDFIcon
 } from '../components/ui'
 import { useStore, useEmpleado, useTarifas, useNomina, usePrestamo, useCredito, useAsistencia } from '../store/context'
-import { calcNomina, buildProduccion, PANES } from '../utils/calc'
+import { calcNomina, buildProduccion, PANES, tarifaRate } from '../utils/calc'
 import { weekId, weekLabel, PAYROLL_DAYS } from '../utils/dates'
 import { money, money0 } from '../utils/format'
 import { generarRecibo } from '../utils/pdf'
@@ -261,10 +261,12 @@ export default function NominaForm() {
           {emp.tipo === 'Panadero' && (
             <div className="flex flex-col gap-3">
               {PANES.map(p => {
-                const tarifa = tarifas[p.k] || { delDia: 0, diaAnterior: 0 }
+                const tarifa = tarifas[p.k] || {}
+                const rateDd = tarifaRate(tarifa.delDia)
+                const rateDa = tarifaRate(tarifa.diaAnterior)
                 const totDd = prodDiaria[`${p.k}_dd`].reduce((s, v) => s + v, 0)
                 const totDa = prodDiaria[`${p.k}_da`].reduce((s, v) => s + v, 0)
-                const subtotal = totDd * (tarifa.delDia || 0) + totDa * (tarifa.diaAnterior || 0)
+                const subtotal = totDd * rateDd + totDa * rateDa
                 return (
                   <Card key={p.k} className="!p-3">
                     <div className="flex items-center justify-between mb-2">
@@ -285,7 +287,11 @@ export default function NominaForm() {
                     {/* Del día row */}
                     <div className="mb-1.5">
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[10px] font-semibold text-ink-2">Del día · {money(tarifa.delDia || 0)}/pza</span>
+                        <span className="text-[10px] font-semibold text-ink-2">
+                          {tarifa.delDia?.precioVenta > 0
+                            ? `Del día · $${tarifa.delDia.precioVenta} × ${tarifa.delDia.porcentaje}% = ${money(rateDd)}/pza`
+                            : `Del día · ${money(rateDd)}/pza`}
+                        </span>
                         <span className="text-[11px] font-bold text-amber-600 tabular-nums">= {totDd} pzas</span>
                       </div>
                       <div className="grid grid-cols-7 gap-1">
@@ -300,7 +306,11 @@ export default function NominaForm() {
                     {/* Día anterior row */}
                     <div>
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[10px] font-semibold text-ink-2">Día ant. · {money(tarifa.diaAnterior || 0)}/pza</span>
+                        <span className="text-[10px] font-semibold text-ink-2">
+                          {tarifa.diaAnterior?.precioVenta > 0
+                            ? `Día ant. · $${tarifa.diaAnterior.precioVenta} × ${tarifa.diaAnterior.porcentaje}% = ${money(rateDa)}/pza`
+                            : `Día ant. · ${money(rateDa)}/pza`}
+                        </span>
                         <span className="text-[11px] font-bold text-amber-600 tabular-nums">= {totDa} pzas</span>
                       </div>
                       <div className="grid grid-cols-7 gap-1">
